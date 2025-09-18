@@ -1,0 +1,53 @@
+*** Begin Patch
+*** Update File: bricks-ai-page-builder/bricks-ai-page-builder.php
+@@
+-spl_autoload_register(
+-	function ( $class_name ) {
+-		if ( strpos( $class_name, 'Addweb_Bricks_Ai_' ) !== 0 ) {
+-			return;
+-		}
+-		$relative = 'includes/class-' . strtolower( str_replace( '_', '-', $class_name ) ) . '.php';
+-		$file     = ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . $relative;
+-		if ( file_exists( $file ) ) {
+-			require_once $file;
+-		}
+-	}
+-);
++spl_autoload_register(
++	function ( $class_name ) {
++		if ( strpos( $class_name, 'Addweb_Bricks_Ai_' ) !== 0 ) {
++			return;
++		}
++		$relative = 'includes/class-' . strtolower( str_replace( '_', '-', $class_name ) ) . '.php';
++		$paths = array(
++			ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . $relative,
++			ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'bricks-ai-page-builder/' . $relative,
++		);
++		foreach ( $paths as $file ) {
++			if ( file_exists( $file ) ) {
++				require_once $file;
++				return;
++			}
++		}
++	}
++);
+@@
+-	require_once ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'includes/class-addweb-bricks-ai-logger.php';
+-	if ( class_exists( 'Addweb_Bricks_Ai_Logger' ) ) {
++	// Attempt to ensure Logger class is available for CPT registration on activation.
++	if ( ! class_exists( 'Addweb_Bricks_Ai_Logger' ) ) {
++		$logger_paths = array(
++			ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'includes/class-addweb-bricks-ai-logger.php',
++			ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'bricks-ai-page-builder/includes/class-addweb-bricks-ai-logger.php',
++		);
++		foreach ( $logger_paths as $logger_path ) {
++			if ( file_exists( $logger_path ) ) {
++				require_once $logger_path;
++				break;
++			}
++		}
++	}
++	if ( class_exists( 'Addweb_Bricks_Ai_Logger' ) ) {
+ 		Addweb_Bricks_Ai_Logger::register_post_type();
+ 	}
+*** End Patch
