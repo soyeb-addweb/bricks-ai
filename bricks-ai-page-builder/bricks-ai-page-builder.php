@@ -36,16 +36,23 @@ if ( ! defined( 'ADDWEB_BRICKS_AI_PLUGIN_DIR_URL' ) ) {
  * Simple autoloader for plugin classes.
  */
 spl_autoload_register(
-	function ( $class_name ) {
-		if ( strpos( $class_name, 'Addweb_Bricks_Ai_' ) !== 0 ) {
-			return;
-		}
-		$relative = 'includes/class-' . strtolower( str_replace( '_', '-', $class_name ) ) . '.php';
-		$file     = ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . $relative;
-		if ( file_exists( $file ) ) {
-			require_once $file;
-		}
-	}
+    function ( $class_name ) {
+        if ( strpos( $class_name, 'Addweb_Bricks_Ai_' ) !== 0 ) {
+            return;
+        }
+        $relative = 'includes/class-' . strtolower( str_replace( '_', '-', $class_name ) ) . '.php';
+        $candidates = array(
+            ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . $relative,
+            // Fallback if main file is placed at repo root and classes live in a nested folder
+            ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'bricks-ai-page-builder/' . $relative,
+        );
+        foreach ( $candidates as $file ) {
+            if ( file_exists( $file ) ) {
+                require_once $file;
+                return;
+            }
+        }
+    }
 );
 
 /**
@@ -73,9 +80,20 @@ function addweb_bricks_ai_activate() {
 	$options = get_option( 'addweb_bricks_ai_settings', array() );
 	update_option( 'addweb_bricks_ai_settings', wp_parse_args( $options, $defaults ) );
 
-	// Ensure CPTs are registered for rewrite rules.
-	require_once ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'includes/class-addweb-bricks-ai-logger.php';
-	if ( class_exists( 'Addweb_Bricks_Ai_Logger' ) ) {
+    // Ensure CPTs are registered for rewrite rules.
+    if ( ! class_exists( 'Addweb_Bricks_Ai_Logger' ) ) {
+        $logger_files = array(
+            ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'includes/class-addweb-bricks-ai-logger.php',
+            ADDWEB_BRICKS_AI_PLUGIN_DIR_PATH . 'bricks-ai-page-builder/includes/class-addweb-bricks-ai-logger.php',
+        );
+        foreach ( $logger_files as $logger_file ) {
+            if ( file_exists( $logger_file ) ) {
+                require_once $logger_file;
+                break;
+            }
+        }
+    }
+    if ( class_exists( 'Addweb_Bricks_Ai_Logger' ) ) {
 		Addweb_Bricks_Ai_Logger::register_post_type();
 	}
 	flush_rewrite_rules();
